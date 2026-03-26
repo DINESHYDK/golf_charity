@@ -354,12 +354,12 @@ async function generateAlgorithmicNumbers(adminDb: ReturnType<typeof createAdmin
 
   // Build weighted array — more frequent scores have more entries
   const weightedPool: number[] = [];
-  for (const [value, count] of frequency) {
+  frequency.forEach((count, value) => {
     // Weight = frequency squared (amplify common scores)
     for (let i = 0; i < count * count; i++) {
       weightedPool.push(value);
     }
-  }
+  });
 
   // Pick 5 unique numbers from weighted pool
   const numbers = new Set<number>();
