@@ -38,7 +38,7 @@ export default function CharityLamp() {
           </h2>
 
           {/* Sub copy */}
-          <p className="font-body text-base text-[var(--color-text-on-dark)]/60 max-w-sm leading-relaxed">
+          <p className="font-body text-base text-[#ffff]/60 max-w-sm leading-relaxed">
             Every month, without exception. You choose the cause — we make sure
             it happens. Increase your percentage anytime.
           </p>
@@ -55,7 +55,7 @@ export default function CharityLamp() {
                 className="flex items-center gap-2 px-4 py-2 rounded-full border border-amber-500/20 bg-amber-500/5"
               >
                 <span className="font-heading font-bold text-amber-400 text-sm">{value}</span>
-                <span className="text-xs text-[var(--color-text-on-dark)]/50">{label}</span>
+                <span className="text-xs text-[#fff]/50">{label}</span>
               </div>
             ))}
           </div>

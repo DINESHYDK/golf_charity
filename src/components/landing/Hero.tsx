@@ -45,8 +45,10 @@ export default function Hero() {
           className="object-cover object-center"
           sizes="100vw"
         />
-        {/* Dark gradient overlay — ensures text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-primary-dark)]/80 via-[var(--color-primary-dark)]/60 to-[var(--color-primary-dark)]/90" />
+        {/* Left-to-right gradient — text lives on the left, fades toward image on right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(13,40,24,0.94)] via-[rgba(13,40,24,0.72)] to-[rgba(13,40,24,0.25)]" />
+        {/* Bottom darkening for depth + stat row legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(13,40,24,0.88)] via-transparent to-[rgba(13,40,24,0.45)]" />
       </div>
 
       {/* ─── HERO CONTENT ──────────────────────── */}
@@ -68,7 +70,7 @@ export default function Hero() {
           {/* Main headline */}
           <motion.h1
             variants={itemVariants}
-            className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-[var(--color-text-on-dark)] leading-tight mb-6"
+            className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-[var(--color-text-on-dark)] leading-tight mb-6 drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]"
           >
             Play Golf.{" "}
             <span className="text-accent">Win Prizes.</span>{" "}
@@ -79,7 +81,7 @@ export default function Hero() {
           {/* Subheading */}
           <motion.p
             variants={itemVariants}
-            className="font-body text-lg md:text-xl text-[var(--color-text-on-dark)]/75 max-w-xl mb-10 leading-relaxed"
+            className="font-body text-lg md:text-xl text-[#FFAA33]/75 max-w-xl mb-10 leading-relaxed"
           >
             Subscribe, enter your Stableford scores each month, and compete in
             our prize draw — while every subscription contributes to the
@@ -129,7 +131,7 @@ export default function Hero() {
                 <Icon className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="font-heading text-2xl font-bold text-[var(--color-text-on-dark)]">
+                <p className="font-heading text-2xl font-bold text-[#feee]]">
                   <AnimatedCounter
                     target={value}
                     prefix={prefix}

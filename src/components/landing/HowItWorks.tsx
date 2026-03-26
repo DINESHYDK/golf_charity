@@ -15,6 +15,8 @@ const STEPS = [
     description:
       "Choose a monthly or yearly plan. A portion of every payment goes directly to the charity you select — minimum 10%, more if you choose.",
     color: "bg-[var(--color-primary)]",
+    colSpan: "lg:col-span-2 lg:row-span-2",
+    featured: true,
   },
   {
     step: "02",
@@ -23,6 +25,8 @@ const STEPS = [
     description:
       "Log up to 5 Stableford golf scores from your rounds. Your most recent 5 are always kept — the oldest rolls off when you add a new one.",
     color: "bg-[var(--color-primary-light)]",
+    colSpan: "lg:col-span-2",
+    featured: false,
   },
   {
     step: "03",
@@ -31,6 +35,8 @@ const STEPS = [
     description:
       "Each month, 5 numbers between 1–45 are drawn. Match 3, 4, or 5 of your scores to those numbers and you win a share of the prize pool.",
     color: "bg-accent",
+    colSpan: "lg:col-span-1",
+    featured: false,
   },
   {
     step: "04",
@@ -39,6 +45,8 @@ const STEPS = [
     description:
       "Winners upload proof, admin verifies, and payouts are processed. The jackpot rolls over if no 5-match winner — it keeps growing.",
     color: "bg-[var(--color-primary-dark)]",
+    colSpan: "lg:col-span-1",
+    featured: false,
   },
 ] as const;
 
@@ -85,14 +93,19 @@ export default function HowItWorks() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 gap-6"
         >
-          {STEPS.map(({ step, icon: Icon, title, description, color }) => (
+          {STEPS.map(({ step, icon: Icon, title, description, color, colSpan, featured }) => (
             <motion.div
               key={step}
               variants={cardVariants}
-              className="relative card p-6 flex flex-col gap-4 group"
+              className={`relative card p-6 flex flex-col gap-4 group cursor-default overflow-hidden
+                border border-transparent hover:border-[#D4AF37] hover:shadow-[0_0_28px_rgba(212,175,55,0.22)]
+                transition-all duration-300 ease-out ${colSpan}`}
             >
+              {/* Subtle gold shimmer on hover — top edge */}
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
               {/* Step number — top right corner */}
               <span className="absolute top-4 right-4 font-heading text-4xl font-bold text-[var(--color-border)] select-none">
                 {step}
@@ -100,25 +113,31 @@ export default function HowItWorks() {
 
               {/* Icon circle */}
               <div
-                className={`flex items-center justify-center w-12 h-12 rounded-full ${color} flex-shrink-0`}
+                className={`flex items-center justify-center ${featured ? "w-16 h-16" : "w-12 h-12"} rounded-full ${color} flex-shrink-0 transition-transform duration-300 group-hover:scale-110`}
               >
                 <Icon
-                  className={`w-6 h-6 ${color === "bg-accent" ? "text-primary-dark" : "text-[var(--color-text-on-dark)]"}`}
+                  className={`${featured ? "w-8 h-8" : "w-6 h-6"} ${color === "bg-accent" ? "text-primary-dark" : "text-[var(--color-text-on-dark)]"}`}
                 />
               </div>
 
               {/* Text */}
-              <div>
-                <h3 className="font-heading text-lg font-bold text-[var(--color-text-primary)] mb-2">
+              <div className={featured ? "flex-1" : ""}>
+                <h3 className={`font-heading font-bold text-[var(--color-text-primary)] mb-2 ${featured ? "text-2xl" : "text-lg"}`}>
                   {title}
                 </h3>
-                <p className="font-body text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                <p className={`font-body text-[var(--color-text-secondary)] leading-relaxed ${featured ? "text-base" : "text-sm"}`}>
                   {description}
                 </p>
+                {featured && (
+                  <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-[#D4AF37] uppercase tracking-widest">
+                    <span className="inline-block w-6 h-0.5 bg-[#D4AF37] rounded-full" />
+                    Start here
+                  </div>
+                )}
               </div>
 
-              {/* Hover accent line */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-card bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-350 origin-left" />
+              {/* Hover accent line — bottom */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-card bg-[#D4AF37] scale-x-0 group-hover:scale-x-100 transition-transform duration-350 origin-left" />
             </motion.div>
           ))}
         </motion.div>
