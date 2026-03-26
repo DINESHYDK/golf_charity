@@ -6,22 +6,21 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, Pencil, Target } from "lucide-react";
 import toast from "react-hot-toast";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import EmptyState from "@/components/shared/EmptyState";
 import { formatDate } from "@/lib/utils";
 import { SCORE_CONFIG, TOAST_MESSAGES } from "@/constants";
 import type { Score } from "@/types";
-import { Target } from "lucide-react";
-
 interface ScoreHistoryProps {
   scores: Score[];
   isLoading: boolean;
   onDelete: (id: string) => Promise<boolean>;
+  onEdit: (score: Score) => void;
 }
 
-export default function ScoreHistory({ scores, isLoading, onDelete }: ScoreHistoryProps) {
+export default function ScoreHistory({ scores, isLoading, onDelete, onEdit }: ScoreHistoryProps) {
   const handleDelete = async (id: string) => {
     const success = await onDelete(id);
     if (success) {
@@ -96,14 +95,25 @@ export default function ScoreHistory({ scores, isLoading, onDelete }: ScoreHisto
                   </div>
                 </div>
 
-                {/* Delete button */}
-                <button
-                  onClick={() => handleDelete(score.id)}
-                  className="p-2 rounded-btn text-[var(--color-text-muted)] hover:text-error hover:bg-error/10 transition-all duration-250 flex-shrink-0"
-                  aria-label={`Delete score ${score.score_value}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Edit button */}
+                  <button
+                    onClick={() => onEdit(score)}
+                    className="p-2 rounded-btn text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all duration-250"
+                    aria-label={`Edit score ${score.score_value}`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  {/* Delete button */}
+                  <button
+                    onClick={() => handleDelete(score.id)}
+                    className="p-2 rounded-btn text-[var(--color-text-muted)] hover:text-error hover:bg-error/10 transition-all duration-250"
+                    aria-label={`Delete score ${score.score_value}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </motion.li>
             ))}
           </AnimatePresence>

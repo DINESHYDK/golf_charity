@@ -87,6 +87,39 @@ export function useScores() {
     }
   };
 
+  // ─── UPDATE SCORE ─────────────────────────
+  // Edit mode: sends PUT with new value + date, optimistic local update
+  const updateScore = async (scoreId: string, scoreValue: number, scoreDate: string) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/scores", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: scoreId, score_value: scoreValue, score_date: scoreDate }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error);
+
+      // Optimistic update — no full re-fetch needed
+      setScores((prev) =>
+        prev.map((s: Score) =>
+          s.id === scoreId ? { ...s, score_value: scoreValue, score_date: scoreDate } : s
+        )
+      );
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update score";
+      setError(message);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     scores,
     isLoading,
@@ -94,6 +127,7 @@ export function useScores() {
     error,
     addScore,
     deleteScore,
+    updateScore,
     refreshScores: fetchScores,
     canAddMore: scores.length < 5,
     scoreCount: scores.length,

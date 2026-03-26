@@ -1,39 +1,60 @@
 // ─── SCORE ENTRY FORM ─────────────────────────
-// Allows a subscriber to log a Stableford score (1–45) with a date
+// Handles both ADD mode (default) and EDIT mode (when editingScore is set)
 // PRD: "Max 5 scores — 6th entry deletes oldest by created_at"
-// Shows a warning when at 5 scores (next entry will replace oldest)
+// Edit mode: pre-fills form, changes button text, hides rolling window warning
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, AlertCircle, Info } from "lucide-react";
+import { Plus, AlertCircle, Info, Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { SCORE_CONFIG, TOAST_MESSAGES } from "@/constants";
+import type { Score } from "@/types";
 
 interface ScoreEntryFormProps {
   onScoreAdded: (scoreValue: number, scoreDate: string) => Promise<boolean>;
+  onScoreUpdated: (id: string, scoreValue: number, scoreDate: string) => Promise<boolean>;
+  onCancelEdit: () => void;
   isSubmitting: boolean;
   scoreCount: number;
-  canAddMore: boolean; // false when at max 5 — next entry replaces oldest
+  canAddMore: boolean;
+  editingScore: Score | null;
 }
 
 export default function ScoreEntryForm({
   onScoreAdded,
+  onScoreUpdated,
+  onCancelEdit,
   isSubmitting,
   scoreCount,
   canAddMore,
+  editingScore,
 }: ScoreEntryFormProps) {
+  const today = new Date().toISOString().split("T")[0];
   const [scoreValue, setScoreValue] = useState("");
-  const [scoreDate, setScoreDate] = useState(
-    new Date().toISOString().split("T")[0] // Default to today
-  );
+  const [scoreDate, setScoreDate] = useState(today);
   const [errors, setErrors] = useState<{ scoreValue?: string; scoreDate?: string }>({});
 
+  const isEditMode = editingScore !== null;
   const isAtMax = scoreCount >= SCORE_CONFIG.MAX_SCORES_PER_USER;
-  const today = new Date().toISOString().split("T")[0];
+
+  // ─── SYNC FORM WITH editingScore ─────────────
+  // When edit mode activates, pre-fill from the score being edited
+  // When it clears, reset to blank
+  useEffect(() => {
+    if (editingScore) {
+      setScoreValue(String(editingScore.score_value));
+      setScoreDate(editingScore.score_date);
+      setErrors({});
+    } else {
+      setScoreValue("");
+      setScoreDate(today);
+      setErrors({});
+    }
+  }, [editingScore, today]);
 
   // ─── VALIDATION ──────────────────────────────
   const validate = () => {
@@ -61,19 +82,32 @@ export default function ScoreEntryForm({
     e.preventDefault();
     if (!validate()) return;
 
-    const success = await onScoreAdded(parseInt(scoreValue, 10), scoreDate);
+    const val = parseInt(scoreValue, 10);
 
-    if (success) {
-      toast.success(
-        isAtMax
-          ? "Score added — oldest score removed to keep rolling 5."
-          : TOAST_MESSAGES.SCORE_ADDED
-      );
-      setScoreValue("");
-      setScoreDate(today);
-      setErrors({});
+    if (isEditMode) {
+      // ─── EDIT FLOW ────────────────────────
+      const success = await onScoreUpdated(editingScore!.id, val, scoreDate);
+      if (success) {
+        toast.success(TOAST_MESSAGES.SCORE_UPDATED);
+        onCancelEdit();
+      } else {
+        toast.error(TOAST_MESSAGES.GENERIC_ERROR);
+      }
     } else {
-      toast.error(TOAST_MESSAGES.GENERIC_ERROR);
+      // ─── ADD FLOW ─────────────────────────
+      const success = await onScoreAdded(val, scoreDate);
+      if (success) {
+        toast.success(
+          isAtMax
+            ? "Score added — oldest score removed to keep rolling 5."
+            : TOAST_MESSAGES.SCORE_ADDED
+        );
+        setScoreValue("");
+        setScoreDate(today);
+        setErrors({});
+      } else {
+        toast.error(TOAST_MESSAGES.GENERIC_ERROR);
+      }
     }
   };
 
@@ -81,17 +115,21 @@ export default function ScoreEntryForm({
     <div className="card p-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-heading text-xl font-bold text-[var(--color-text-primary)]">
-          Add Score
+          {isEditMode ? "Edit Score" : "Add Score"}
         </h2>
-        {/* Score counter badge */}
-        <span className={`badge ${isAtMax ? "badge-warning" : "badge-info"}`}>
-          {scoreCount} / {SCORE_CONFIG.MAX_SCORES_PER_USER} scores
-        </span>
+        {/* Badge: editing indicator in edit mode, score counter in add mode */}
+        {isEditMode ? (
+          <span className="badge badge-warning text-[10px]">Editing</span>
+        ) : (
+          <span className={`badge ${isAtMax ? "badge-warning" : "badge-info"}`}>
+            {scoreCount} / {SCORE_CONFIG.MAX_SCORES_PER_USER} scores
+          </span>
+        )}
       </div>
 
-      {/* Rolling window notice when at max */}
+      {/* Rolling window notice — only in add mode when at max */}
       <AnimatePresence>
-        {isAtMax && (
+        {!isEditMode && isAtMax && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -144,17 +182,31 @@ export default function ScoreEntryForm({
           <span>Stableford points: Albatross=6, Eagle=5, Birdie=3, Par=2, Bogey=1</span>
         </div>
 
+        {/* Submit button */}
         <Button
           type="submit"
           variant="primary"
           size="md"
           fullWidth
           isLoading={isSubmitting}
-          loadingText="Adding score..."
-          icon={<Plus className="w-4 h-4" />}
+          loadingText={isEditMode ? "Updating..." : "Adding score..."}
+          icon={isEditMode ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
         >
-          Add Score
+          {isEditMode ? "Update Score" : "Add Score"}
         </Button>
+
+        {/* Cancel edit button — only in edit mode */}
+        {isEditMode && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="md"
+            fullWidth
+            onClick={onCancelEdit}
+          >
+            Cancel Edit
+          </Button>
+        )}
       </form>
     </div>
   );

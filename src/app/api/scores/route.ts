@@ -141,3 +141,61 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Failed to delete score" }, { status: 500 });
   }
 }
+
+// ─── PUT: Update an existing score ───────────
+// Edit mode: updates score_value + score_date in place
+// Rolling window does NOT apply — editing is not a new entry
+// Security: user can only update their own scores (double-checked below + RLS)
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, score_value, score_date } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Score ID is required" }, { status: 400 });
+    }
+
+    const val = parseInt(score_value, 10);
+    if (isNaN(val) || val < SCORE_CONFIG.MIN_SCORE_VALUE || val > SCORE_CONFIG.MAX_SCORE_VALUE) {
+      return NextResponse.json(
+        { error: `Score must be between ${SCORE_CONFIG.MIN_SCORE_VALUE} and ${SCORE_CONFIG.MAX_SCORE_VALUE}` },
+        { status: 400 }
+      );
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    if (!score_date || score_date > today) {
+      return NextResponse.json(
+        { error: "Score date is required and cannot be in the future" },
+        { status: 400 }
+      );
+    }
+
+    const { data: updatedScore, error } = await supabase
+      .from("scores")
+      .update({ score_value: val, score_date })
+      .eq("id", id)
+      .eq("user_id", user.id) // Security: only own scores
+      .select()
+      .single();
+
+    if (error || !updatedScore) {
+      return NextResponse.json(
+        { error: "Score not found or not owned by you" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ data: updatedScore });
+  } catch (err) {
+    console.error("Error updating score:", err);
+    return NextResponse.json({ error: "Failed to update score" }, { status: 500 });
+  }
+}
