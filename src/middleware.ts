@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
   // is not yet active (e.g. local dev before hook is enabled).
   let userRole = "subscriber";
   if (user) {
-    const jwtRole = (user as Record<string, unknown>).user_role as string | undefined;
+    const jwtRole = (user as unknown as Record<string, unknown>).user_role as string | undefined;
     if (jwtRole) {
       userRole = jwtRole;
     } else {

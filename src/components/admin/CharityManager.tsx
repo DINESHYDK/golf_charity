@@ -296,7 +296,7 @@ export default function CharityManager() {
   }
 
   function handleUpdate(id: string, data: EditState) {
-    patch(id, data);
+    patch(id, data as unknown as Record<string, unknown>);
   }
 
   // ─── DELETE (soft) ────────────────────────

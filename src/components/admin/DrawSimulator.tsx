@@ -32,7 +32,9 @@ import { cn, formatDrawMonth, formatCurrency } from "@/lib/utils";
 import type { Draw } from "@/types";
 
 // ─── EXTENDED DRAW TYPE: includes prize pool ──
-interface DrawWithPool extends Draw {
+// Omit the base prize_pool so we can redefine it with a partial shape
+// (the API returns only the fields we query, not the full PrizePool row)
+interface DrawWithPool extends Omit<Draw, "prize_pool"> {
   prize_pool?: {
     total_pool_amount: number;
     match_5_amount: number | null;

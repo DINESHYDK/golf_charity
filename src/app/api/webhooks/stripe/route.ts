@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
 
             // ─── PARALLEL DB WRITES ───────────
             // Run payment insert + subscription update concurrently to avoid timeout
-            const ops: Promise<unknown>[] = [
+            const ops: PromiseLike<unknown>[] = [
               supabase.from("payments").insert({
                 user_id: subscription.user_id,
                 subscription_id: subscription.id,

@@ -31,7 +31,8 @@ import { cn, formatCurrency, formatDrawMonth } from "@/lib/utils";
 import type { Winner, Profile, Draw } from "@/types";
 
 // ─── EXTENDED WINNER TYPE ─────────────────────
-interface WinnerRow extends Winner {
+// Omit base profile/draw so we can redefine with partial (API-queried) shapes
+interface WinnerRow extends Omit<Winner, "profile" | "draw"> {
   profile: Pick<Profile, "id" | "full_name"> | null;
   draw: Pick<Draw, "id" | "draw_month" | "drawn_numbers" | "status"> | null;
 }
