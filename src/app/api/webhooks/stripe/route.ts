@@ -50,10 +50,17 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       // ─── CHECKOUT COMPLETED ──────────────
       // User just subscribed — create subscription record
+      // Expand the Stripe subscription to get current_period_end immediately
+      // (avoids "Renews Unknown" on the dashboard)
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
         if (session.mode === "subscription" && session.metadata?.user_id) {
+          // Fetch full subscription from Stripe to get period dates
+          const stripeSub = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          );
+
           const { error } = await supabase.from("subscriptions").upsert({
             user_id: session.metadata.user_id,
             plan_type: session.metadata.plan_type || "monthly",
@@ -61,11 +68,29 @@ export async function POST(request: NextRequest) {
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
             charity_percentage: parseFloat(session.metadata.charity_percentage || "10"),
-            current_period_start: new Date().toISOString(),
+            current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
           });
 
           if (error) console.error("Error creating subscription:", error);
         }
+
+        // ─── INDEPENDENT DONATION COMPLETION ─
+        // When a one-time donation checkout completes, update
+        // status to 'succeeded' and record the real payment_intent_id
+        if (session.metadata?.type === "independent_donation" && session.metadata?.user_id) {
+          const adminDb = createAdminClient();
+          const { error: donationError } = await adminDb
+            .from("independent_donations")
+            .update({
+              status: "succeeded",
+              stripe_payment_intent_id: session.payment_intent as string,
+            })
+            .eq("stripe_payment_intent_id", session.id); // was stored as session.id in POST
+
+          if (donationError) console.error("Error updating donation:", donationError);
+        }
+
         break;
       }
 
@@ -91,29 +116,36 @@ export async function POST(request: NextRequest) {
             const charityCut = (amount * charityPct) / 100;
             const prizePoolCut = (amount * REVENUE_SPLIT.PRIZE_POOL_PERCENTAGE) / 100;
 
-            await supabase.from("payments").insert({
-              user_id: subscription.user_id,
-              subscription_id: subscription.id,
-              stripe_payment_intent_id: invoice.payment_intent as string,
-              amount,
-              charity_cut: Math.round(charityCut * 100) / 100,
-              prize_pool_cut: Math.round(prizePoolCut * 100) / 100,
-              currency: invoice.currency || "gbp",
-              status: "succeeded",
-            });
+            // ─── PARALLEL DB WRITES ───────────
+            // Run payment insert + subscription update concurrently to avoid timeout
+            const ops: Promise<unknown>[] = [
+              supabase.from("payments").insert({
+                user_id: subscription.user_id,
+                subscription_id: subscription.id,
+                stripe_payment_intent_id: invoice.payment_intent as string,
+                amount,
+                charity_cut: Math.round(charityCut * 100) / 100,
+                prize_pool_cut: Math.round(prizePoolCut * 100) / 100,
+                currency: invoice.currency || "gbp",
+                status: "succeeded",
+              }),
+            ];
 
-            // Update subscription period dates
             if (invoice.lines?.data?.[0]?.period) {
               const period = invoice.lines.data[0].period;
-              await supabase
-                .from("subscriptions")
-                .update({
-                  status: "active",
-                  current_period_start: new Date(period.start * 1000).toISOString(),
-                  current_period_end: new Date(period.end * 1000).toISOString(),
-                })
-                .eq("id", subscription.id);
+              ops.push(
+                supabase
+                  .from("subscriptions")
+                  .update({
+                    status: "active",
+                    current_period_start: new Date(period.start * 1000).toISOString(),
+                    current_period_end: new Date(period.end * 1000).toISOString(),
+                  })
+                  .eq("id", subscription.id)
+              );
             }
+
+            await Promise.all(ops);
           }
         }
         break;
@@ -150,6 +182,7 @@ export async function POST(request: NextRequest) {
       }
 
       // ─── SUBSCRIPTION UPDATED ────────────
+      // Also saves current_period_end so dashboard never shows "Renews Unknown"
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
 
@@ -168,6 +201,8 @@ export async function POST(request: NextRequest) {
           .from("subscriptions")
           .update({
             status: statusMap[sub.status] || "inactive",
+            current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
           })
           .eq("stripe_subscription_id", sub.id);
         break;
