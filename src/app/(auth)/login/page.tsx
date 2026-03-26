@@ -34,7 +34,7 @@ export default function LoginPage() {
           <blockquote className="font-heading text-3xl font-bold text-[var(--color-text-on-dark)] leading-snug mb-4">
             &ldquo;Every round you play could win you prizes and change someone&apos;s life.&rdquo;
           </blockquote>
-          <p className="text-sm text-[var(--color-text-on-dark)]/60">
+          <p className="text-sm text-[#fedf]/60">
             Join golfers who play with purpose.
           </p>
         </div>
@@ -43,11 +43,11 @@ export default function LoginPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="px-4 py-3 rounded-card bg-[var(--color-primary-light)]/40 border border-[var(--color-border-dark)]">
             <p className="font-heading text-2xl font-bold text-accent">72%</p>
-            <p className="text-xs text-[var(--color-text-on-dark)]/60">goes to the prize pool</p>
+            <p className="text-xs text-[#fedf]/60">goes to the prize pool</p>
           </div>
           <div className="px-4 py-3 rounded-card bg-[var(--color-primary-light)]/40 border border-[var(--color-border-dark)]">
             <p className="font-heading text-2xl font-bold text-accent">10%+</p>
-            <p className="text-xs text-[var(--color-text-on-dark)]/60">goes to charity</p>
+            <p className="text-xs text-[#fedf]/60">goes to charity</p>
           </div>
         </div>
       </div>

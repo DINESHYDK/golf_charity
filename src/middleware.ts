@@ -5,25 +5,6 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-// ─── GET USER ROLE ────────────────────────────
-// First try JWT app_metadata (zero DB call — works after Supabase JWT hook is enabled)
-// Falls back to DB query if JWT claim not present (works before hook setup)
-async function getUserRole(supabase: SupabaseClient, userId: string): Promise<string> {
-  // Attempt to read role directly from the session JWT (no DB round-trip)
-  const { data: { session } } = await supabase.auth.getSession();
-  const jwtRole = session?.user?.app_metadata?.user_role;
-  if (jwtRole) return jwtRole;
-
-  // Fallback: query the profiles table (used before JWT hook is configured)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-  return profile?.role ?? "subscriber";
-}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -62,23 +43,43 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // ─── RESOLVE USER ROLE (once, upfront) ───────
+  // The Supabase custom_access_token_hook injects user_role at the TOP LEVEL
+  // of the JWT claims (not inside app_metadata). After decoding, those claims
+  // appear directly on the user object — so (user as Record<string,unknown>).user_role
+  // is the zero-DB-call path. Falls back to a profiles table query if the hook
+  // is not yet active (e.g. local dev before hook is enabled).
+  let userRole = "subscriber";
+  if (user) {
+    const jwtRole = (user as Record<string, unknown>).user_role as string | undefined;
+    if (jwtRole) {
+      userRole = jwtRole;
+    } else {
+      // Fallback DB query — only runs when JWT hook is not configured
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      userRole = profile?.role ?? "subscriber";
+    }
+  }
+
+  const isAdmin = userRole === "admin";
+
   // ─── AUTH ROUTES: /login and /signup ─────────
   // Logged-in users should never see the auth pages.
   // Redirect admins to /admin, all other users to /dashboard.
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    const role = await getUserRole(supabase, user.id);
     const url = request.nextUrl.clone();
-    url.pathname = role === "admin" ? "/admin" : "/dashboard";
+    url.pathname = isAdmin ? "/admin" : "/dashboard";
     return NextResponse.redirect(url);
   }
 
   // ─── DASHBOARD + SETTINGS ROUTES ─────────────
   // /dashboard, /dashboard/*, /settings
   // Require authentication. Admins should not land here — send them to /admin.
-  if (
-    pathname.startsWith("/dashboard") ||
-    pathname === "/settings"
-  ) {
+  if (pathname.startsWith("/dashboard") || pathname === "/settings") {
     // Unauthenticated → /login with ?redirect= so user returns after signing in
     if (!user) {
       const url = request.nextUrl.clone();
@@ -88,8 +89,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Admin visiting subscriber area → redirect to admin dashboard
-    const role = await getUserRole(supabase, user.id);
-    if (role === "admin") {
+    if (isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       return NextResponse.redirect(url);
@@ -123,10 +123,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Resolve role and reject any non-admin user
-    const role = await getUserRole(supabase, user.id);
-    if (role !== "admin") {
-      // Non-admin (subscriber) trying to reach admin routes → subscriber dashboard
+    // Non-admin trying to reach admin routes → subscriber dashboard
+    if (!isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
