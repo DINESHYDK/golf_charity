@@ -1,9 +1,12 @@
+"use client";
+
 // ─── FOOTER ───────────────────────────────────
 // Landing page footer — dark green bg
 // Sections: Logo/tagline | Links | Legal
 
 import Link from "next/link";
 import { Trophy, Heart } from "lucide-react";
+import { motion } from "framer-motion";
 
 const FOOTER_LINKS = {
   Platform: [
@@ -31,10 +34,10 @@ export default function Footer() {
       <div className="container-custom py-16">
 
         {/* ─── TOP SECTION ───────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
 
           {/* Brand column — wider than the others */}
-          <div className="lg:col-span-2">
+          <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-accent">
                 <Trophy className="w-5 h-5 text-primary-dark" />
@@ -65,14 +68,18 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-3">
                 {links.map((link) => (
-                  <li key={link.label}>
+                  <motion.li
+                    key={link.label}
+                    whileHover={{ x: 5 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  >
                     <Link
                       href={link.href}
-                      className="font-body text-sm text-[var(--color-text-on-dark)]/60 hover:text-accent transition-colors duration-250"
+                      className="font-body text-sm text-[var(--color-text-on-dark)]/60 hover:text-[#D4AF37] transition-colors duration-200 inline-block"
                     >
                       {link.label}
                     </Link>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
             </div>
