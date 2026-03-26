@@ -1,7 +1,11 @@
 // ─── DONATIONS API ROUTE ─────────────────────
-// POST: Create an independent donation via Stripe
+// POST: Create a Stripe Checkout Session for one-time donation
 // GET: Fetch user's donation history
 // PRD: "Independent donation option (not tied to gameplay)"
+//
+// Decision: Checkout Session (not PaymentIntent) — consistent with
+// subscription flow, avoids @stripe/react-stripe-js dependency.
+// Frontend redirects to session.url, completes payment on Stripe hosted page.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -32,7 +36,7 @@ export async function GET() {
   }
 }
 
-// ─── POST: Create a donation ─────────────────
+// ─── POST: Create a Checkout Session for donation ──
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -52,27 +56,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch charity name for Stripe line item display
+    const { data: charity } = await supabase
+      .from("charities")
+      .select("name")
+      .eq("id", charity_id)
+      .single();
+
+    const charityName = charity?.name ?? "Charity Donation";
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    // Create Stripe Payment Intent for one-time donation
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe uses cents
-      currency: "gbp",
+    // ─── CREATE CHECKOUT SESSION ──────────────
+    // mode: "payment" = one-time charge (not subscription)
+    // price_data: dynamic — no pre-created Stripe price needed
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "gbp",
+            unit_amount: Math.round(amount * 100), // Stripe uses pence
+            product_data: {
+              name: `Donation to ${charityName}`,
+              description: "One-time charitable donation via GolfGive",
+            },
+          },
+          quantity: 1,
+        },
+      ],
       metadata: {
         user_id: user.id,
         charity_id,
         type: "independent_donation",
       },
+      success_url: `${appUrl}/charity?donation=success`,
+      cancel_url: `${appUrl}/charity?donation=cancelled`,
+      customer_email: user.email ?? undefined,
     });
 
-    // Record in database as pending
+    // Record as pending — webhook will update to 'succeeded' on completion
+    // Store session.id temporarily; webhook replaces with real payment_intent_id
     const { data: donation, error } = await supabase
       .from("independent_donations")
       .insert({
         user_id: user.id,
         charity_id,
         amount,
-        stripe_payment_intent_id: paymentIntent.id,
+        stripe_payment_intent_id: session.id, // replaced by webhook on completion
         status: "pending",
       })
       .select()
@@ -83,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       data: {
         donation,
-        client_secret: paymentIntent.client_secret,
+        url: session.url, // frontend redirects to this URL
       },
     });
   } catch (err) {

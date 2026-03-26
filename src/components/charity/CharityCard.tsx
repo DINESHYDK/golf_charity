@@ -1,18 +1,20 @@
 // ─── CHARITY CARD ─────────────────────────────
-// Displays a single charity with select/deselect toggle
-// Highlighted with gold border when it's the user's active selection
+// Displays a single charity with View Profile + Select actions
+// PRD: "Charity listing page with individual profiles"
 
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, ExternalLink } from "lucide-react";
+import { Check, ExternalLink, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Button from "@/components/ui/Button";
 import type { Charity } from "@/types";
 
 interface CharityCardProps {
   charity: Charity;
   isSelected: boolean;
   onSelect: (charityId: string) => void;
+  onViewProfile: (charity: Charity) => void;
   isLoading?: boolean;
 }
 
@@ -20,22 +22,18 @@ export default function CharityCard({
   charity,
   isSelected,
   onSelect,
+  onViewProfile,
   isLoading = false,
 }: CharityCardProps) {
   return (
-    <motion.button
+    <motion.div
       whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15 }}
-      onClick={() => !isLoading && onSelect(charity.id)}
-      disabled={isLoading}
       className={cn(
-        "relative w-full text-left card p-5 flex flex-col gap-3 transition-all duration-250 cursor-pointer",
-        "focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
+        "relative w-full card p-5 flex flex-col gap-3 transition-all duration-250",
         isSelected
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent)] bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent"
-          : "hover:border-primary/30",
-        isLoading && "opacity-60 cursor-not-allowed"
+          : "hover:border-primary/30"
       )}
     >
       {/* Selected checkmark */}
@@ -58,13 +56,13 @@ export default function CharityCard({
 
       {/* Charity name */}
       <h3 className={cn(
-        "font-heading text-base font-bold",
+        "font-heading text-base font-bold pr-6",
         isSelected ? "text-primary" : "text-[var(--color-text-primary)]"
       )}>
         {charity.name}
       </h3>
 
-      {/* Description */}
+      {/* Description (truncated on card) */}
       {charity.description && (
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-3">
           {charity.description}
@@ -77,18 +75,36 @@ export default function CharityCard({
           href={charity.website_url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()} // Don't trigger card select
-          className="flex items-center gap-1 text-xs text-accent hover:underline mt-auto"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1 text-xs text-accent hover:underline"
         >
           <ExternalLink className="w-3 h-3" />
           Visit website
         </a>
       )}
 
-      {/* "Selected" label at bottom */}
-      {isSelected && (
-        <p className="text-xs font-semibold text-accent">✓ Your selected charity</p>
-      )}
-    </motion.button>
+      {/* Action row */}
+      <div className="flex items-center gap-2 mt-auto pt-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onViewProfile(charity)}
+          icon={<Eye className="w-3.5 h-3.5" />}
+          className="text-xs"
+        >
+          View Profile
+        </Button>
+        <Button
+          variant={isSelected ? "secondary" : "primary"}
+          size="sm"
+          onClick={() => !isLoading && onSelect(charity.id)}
+          disabled={isLoading}
+          icon={isSelected ? <Check className="w-3.5 h-3.5" /> : undefined}
+          className="text-xs ml-auto"
+        >
+          {isSelected ? "Selected" : "Select"}
+        </Button>
+      </div>
+    </motion.div>
   );
 }

@@ -16,6 +16,7 @@ import {
   Trophy,
   LogOut,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +30,7 @@ const ICON_MAP = {
   Dice5,
   Heart,
   Trophy,
+  Settings,
 } as const;
 
 type IconName = keyof typeof ICON_MAP;

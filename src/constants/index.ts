@@ -70,6 +70,7 @@ export const DASHBOARD_NAV = [
   { label: "Charity", href: "/charity", icon: "Heart" },
   { label: "Draws", href: "/draws", icon: "Ticket" },
   { label: "Winnings", href: "/winnings", icon: "Trophy" },
+  { label: "Settings", href: "/settings", icon: "Settings" },
 ] as const;
 
 export const ADMIN_NAV = [
@@ -78,6 +79,7 @@ export const ADMIN_NAV = [
   { label: "Draws", href: "/admin/draws", icon: "Dice5" },
   { label: "Charities", href: "/admin/charities", icon: "Heart" },
   { label: "Winners", href: "/admin/winners", icon: "Trophy" },
+  { label: "Settings", href: "/admin/settings", icon: "Settings" },
 ] as const;
 
 // ─── STABLEFORD SCORING REFERENCE ────────────
@@ -111,4 +113,5 @@ export const TOAST_MESSAGES = {
   GENERIC_ERROR: "Something went wrong. Please try again.",
   AUTH_ERROR: "Please sign in to continue",
   SUBSCRIPTION_REQUIRED: "An active subscription is required",
+  SCORE_UPDATED: "Score updated successfully!",
 } as const;
