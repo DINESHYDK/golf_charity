@@ -32,10 +32,8 @@ export default function Footer() {
   return (
     <footer className="bg-[var(--color-bg-dark)] text-[var(--color-text-on-dark)]">
       <div className="container-custom py-16">
-
         {/* ─── TOP SECTION ───────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
-
           {/* Brand column — wider than the others */}
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
@@ -51,13 +49,6 @@ export default function Footer() {
               tracking, monthly prize draws, and charitable giving. Every swing
               makes a difference.
             </p>
-            {/* Amber trust badge — mirrors the lamp section above */}
-            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30">
-              <Heart className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-medium text-amber-300">
-                10% min. of every subscription goes to charity
-              </span>
-            </div>
           </div>
 
           {/* Link columns */}
@@ -95,6 +86,13 @@ export default function Footer() {
             Built with care for golfers and charities worldwide.
           </p>
         </div>
+        <a
+          href="https://portfolio-lemon-sigma-ttzklk8yxq.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          developed by YDK
+        </a>
       </div>
     </footer>
   );

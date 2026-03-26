@@ -48,7 +48,7 @@ export default function SignupPage() {
                 <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20 flex-shrink-0 mt-0.5">
                   <Check className="w-3.5 h-3.5 text-accent" />
                 </div>
-                <span className="text-sm text-[var(--color-text-on-dark)]/80 leading-relaxed">
+                <span className="text-sm text-[#efff]/80 leading-relaxed">
                   {benefit}
                 </span>
               </li>
@@ -59,7 +59,7 @@ export default function SignupPage() {
         {/* Trust badge */}
         <div className="flex items-center gap-3 px-4 py-3 rounded-card bg-[var(--color-primary-light)]/40 border border-[var(--color-border-dark)]">
           <Trophy className="w-5 h-5 text-accent flex-shrink-0" />
-          <p className="text-xs text-[var(--color-text-on-dark)]/60 leading-relaxed">
+          <p className="text-xs text-[#eeff]/60 leading-relaxed">
             Secure payments via Stripe. Cancel anytime.
             Your charity donation starts from your first payment.
           </p>
